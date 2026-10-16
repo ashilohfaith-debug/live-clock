@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/clock.py": {
+      "includeFiles": "assets/**",
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    { "source": "/clock.gif", "destination": "/api/clock" }
+  ]
+}
