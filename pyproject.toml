@@ -1,0 +1,12 @@
+[project]
+name = "live-clock"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "Pillow>=10.0.0",
+  "numpy>=1.26.0",
+  "tzdata",
+]
+
+[tool.vercel]
+entrypoint = "api.clock:handler"
