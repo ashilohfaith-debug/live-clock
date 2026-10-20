@@ -6,6 +6,6 @@
     }
   },
   "rewrites": [
-    { "source": "/clock.gif", "destination": "/api/clock" }
+    { "source": "/clock", "destination": "/api/clock" }
   ]
 }
