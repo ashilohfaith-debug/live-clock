@@ -65,8 +65,7 @@ class _Base:
         im = Image.open(io.BytesIO(self.data))
         im.seek(0)
         self.palette = im.getpalette()[:384] if im.getpalette() else None
-        raw_palette = im.palette.palette
-        self.palette_bytes = bytes(raw_palette[:384])
+        self.palette_bytes = bytes(im.getpalette()[:384])
         self.frame0 = np.array(im, dtype=np.uint8)           # palette indices
         self.span = _frame0_span(self.data)
 
