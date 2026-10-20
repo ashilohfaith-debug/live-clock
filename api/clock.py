@@ -59,7 +59,7 @@ class handler(BaseHTTPRequestHandler):
         debug = "debug" in query
         problem = None
         try:
-            from _clock_gif import render          # imported here so errors can be shown
+            from clock_gif import render         # imported here so errors can be shown
             self._send(200, "image/gif", render(_hhmm(query)))
             return
         except Exception:
