@@ -6,6 +6,7 @@
     }
   },
   "rewrites": [
+    { "source": "/", "destination": "/api/clock?html=1" },
     { "source": "/clock", "destination": "/api/clock" }
   ]
 }
