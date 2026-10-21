@@ -86,28 +86,35 @@ class handler(BaseHTTPRequestHandler):
 </head>
 <body>
   <img id="clock" src="/clock" alt="Live Clock">
-  <script>
-  const img = document.getElementById('clock');
+    <script>
+    const img = document.getElementById('clock');
+    let lastLoadedMinute = -1;
 
-  function updateClock() {
-    // 1. Preload the new GIF in the background so there's zero flickering
-    const nextImg = new Image();
-    nextImg.src = '/clock?t=' + Date.now();
-    nextImg.onload = () => {
-      img.src = nextImg.src;
-    };
+    function refreshImage() {
+      const nextImg = new Image();
+      nextImg.src = '/clock?t=' + Date.now();
+      nextImg.onload = () => {
+        img.src = nextImg.src;
+        lastLoadedMinute = new Date().getMinutes();
+      };
+    }
 
-    // 2. Schedule the next update exactly at the start of the next minute (:00s)
-    const now = new Date();
-    const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 500;
-    setTimeout(updateClock, msUntilNextMinute);
-  }
+    function checkTime() {
+      const now = new Date();
+      // If the minute rolled over and we haven't loaded it yet, fetch now
+      if (now.getMinutes() !== lastLoadedMinute && now.getSeconds() >= 1) {
+        refreshImage();
+      }
+    }
 
-  // Start syncing to the next minute
-  const now = new Date();
-  const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 500;
-  setTimeout(updateClock, msUntilNextMinute);
-</script>
+    // Check every 2 seconds so drift, tab switching, and slow networks recover immediately
+    setInterval(checkTime, 2000);
+
+    // Refresh instantly when a user returns to the tab or unlocks their phone
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshImage();
+    });
+  </script>
 </body>
 </html>"""
             self._send(200, "text/html; charset=utf-8", html, cache=False)
