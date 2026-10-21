@@ -57,19 +57,59 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         query = parse_qs(urlparse(self.path).query)
         debug = "debug" in query
+
+        # Serve the auto-refreshing HTML page when ?html=1
+        if "html" in query:
+            html = b"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Clock</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    img {
+      max-width: 100%;
+      max-height: 100vh;
+      display: block;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <img id="clock" src="/clock" alt="Live Clock">
+  <script>
+    const img = document.getElementById('clock');
+    setInterval(() => {
+      img.src = '/clock?t=' + Date.now();
+    }, 60000);
+  </script>
+</body>
+</html>"""
+            self._send(200, "text/html; charset=utf-8", html, cache=False)
+            return
+
+        # Serve the GIF
         problem = None
         try:
-            from clock_gif import render         # imported here so errors can be shown
+            from clock_gif import render
             self._send(200, "image/gif", render(_hhmm(query)))
             return
         except Exception:
             problem = traceback.format_exc()
-            print(problem, file=sys.stderr)        # also appears in Vercel's Logs tab
+            print(problem, file=sys.stderr)
 
         if debug:
             self._send(500, "text/plain; charset=utf-8", problem.encode("utf-8"), cache=False)
             return
-        # never leave a broken image on the profile: fall back to the plain GIF
         try:
             with open(FALLBACK_GIF, "rb") as f:
                 self._send(200, "image/gif", f.read())
