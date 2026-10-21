@@ -112,7 +112,7 @@ class handler(BaseHTTPRequestHandler):
       }, msToPreload);
 
       // 2. Flip precisely at :00.200 (+200ms buffer so it never flips early in second 59)
-      const msToFlip = (60 - s) * 1000 - ms + 200;
+      const msToFlip = (60 - s) * 1000 - ms + 1000;
       timerFlip = setTimeout(() => {
         if (preloadedImg && preloadedImg.complete) {
           img.src = preloadedImg.src;
