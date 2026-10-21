@@ -51,8 +51,8 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         if cache:
-            # no caching, so GitHub fetches a fresh image (and the current minute) each time
-            self.send_header("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0")
+            self.send_header("Surrogate-Control", "no-store")
             self.send_header("Pragma", "no-cache")
             self.send_header("Expires", "0")
         self.end_headers()
@@ -104,15 +104,15 @@ class handler(BaseHTTPRequestHandler):
       const s = now.getSeconds();
       const ms = now.getMilliseconds();
 
-      // 1. Download the NEXT minute at :55s so it's fully ready in browser memory
+      // 1. Download the NEXT minute at :55s so it's fully ready in memory
       const msToPreload = Math.max(0, (55 - s) * 1000 - ms);
       timerPreload = setTimeout(() => {
         preloadedImg = new Image();
         preloadedImg.src = '/clock?offset=60&t=' + Date.now();
       }, msToPreload);
 
-      // 2. Flip precisely at :00.000 with 0 seconds latency
-      const msToFlip = (60 - s) * 1000 - ms;
+      // 2. Flip precisely at :00.200 (+200ms buffer so it never flips early in second 59)
+      const msToFlip = (60 - s) * 1000 - ms + 200;
       timerFlip = setTimeout(() => {
         if (preloadedImg && preloadedImg.complete) {
           img.src = preloadedImg.src;
