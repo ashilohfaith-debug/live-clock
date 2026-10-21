@@ -87,11 +87,27 @@ class handler(BaseHTTPRequestHandler):
 <body>
   <img id="clock" src="/clock" alt="Live Clock">
   <script>
-    const img = document.getElementById('clock');
-    setInterval(() => {
-      img.src = '/clock?t=' + Date.now();
-    }, 60000);
-  </script>
+  const img = document.getElementById('clock');
+
+  function updateClock() {
+    // 1. Preload the new GIF in the background so there's zero flickering
+    const nextImg = new Image();
+    nextImg.src = '/clock?t=' + Date.now();
+    nextImg.onload = () => {
+      img.src = nextImg.src;
+    };
+
+    // 2. Schedule the next update exactly at the start of the next minute (:00s)
+    const now = new Date();
+    const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 500;
+    setTimeout(updateClock, msUntilNextMinute);
+  }
+
+  // Start syncing to the next minute
+  const now = new Date();
+  const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 500;
+  setTimeout(updateClock, msUntilNextMinute);
+</script>
 </body>
 </html>"""
             self._send(200, "text/html; charset=utf-8", html, cache=False)
