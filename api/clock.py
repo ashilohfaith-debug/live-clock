@@ -34,7 +34,11 @@ def _now(tz_name):
 def _hhmm(query):
     tz_name = (query.get("tz") or [DEFAULT_TZ])[0]
     fmt = (query.get("format") or ["24"])[0]
-    now = _now(tz_name)
+    try:
+        offset = int((query.get("offset") or [0])[0])
+    except Exception:
+        offset = 0
+    now = _now(tz_name) + timedelta(seconds=offset)
     hour = now.hour
     if fmt == "12":
         hour = hour % 12 or 12
@@ -86,33 +90,47 @@ class handler(BaseHTTPRequestHandler):
 </head>
 <body>
   <img id="clock" src="/clock" alt="Live Clock">
-    <script>
+  <script>
     const img = document.getElementById('clock');
-    let lastLoadedMinute = -1;
+    let preloadedImg = null;
+    let timerPreload = null;
+    let timerFlip = null;
 
-    function refreshImage() {
-      const nextImg = new Image();
-      nextImg.src = '/clock?t=' + Date.now();
-      nextImg.onload = () => {
-        img.src = nextImg.src;
-        lastLoadedMinute = new Date().getMinutes();
-      };
-    }
+    function schedule() {
+      clearTimeout(timerPreload);
+      clearTimeout(timerFlip);
 
-    function checkTime() {
       const now = new Date();
-      // If the minute rolled over and we haven't loaded it yet, fetch now
-      if (now.getMinutes() !== lastLoadedMinute && now.getSeconds() >= 1) {
-        refreshImage();
-      }
+      const s = now.getSeconds();
+      const ms = now.getMilliseconds();
+
+      // 1. Download the NEXT minute at :55s so it's fully ready in browser memory
+      const msToPreload = Math.max(0, (55 - s) * 1000 - ms);
+      timerPreload = setTimeout(() => {
+        preloadedImg = new Image();
+        preloadedImg.src = '/clock?offset=60&t=' + Date.now();
+      }, msToPreload);
+
+      // 2. Flip precisely at :00.000 with 0 seconds latency
+      const msToFlip = (60 - s) * 1000 - ms;
+      timerFlip = setTimeout(() => {
+        if (preloadedImg && preloadedImg.complete) {
+          img.src = preloadedImg.src;
+        } else {
+          img.src = '/clock?t=' + Date.now();
+        }
+        schedule();
+      }, msToFlip);
     }
 
-    // Check every 2 seconds so drift, tab switching, and slow networks recover immediately
-    setInterval(checkTime, 2000);
+    schedule();
 
-    // Refresh instantly when a user returns to the tab or unlocks their phone
+    // Catch up instantly if the user switches tabs or wakes phone
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) refreshImage();
+      if (!document.hidden) {
+        img.src = '/clock?t=' + Date.now();
+        schedule();
+      }
     });
   </script>
 </body>
